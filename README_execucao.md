@@ -2,18 +2,8 @@
 
 ## Pré-requisitos
 
-- Python 3.10 ou superior
-- pip
-
-## Instalação
-
-Na raiz do projeto, instale as dependências:
-
-```bash
-pip install -r requirements.txt
-```
-
----
+- Python 3.10 ou superior **ou** Docker + Docker Compose
+- pip (apenas para execução sem Docker)
 
 ## Serviços disponíveis
 
@@ -27,7 +17,31 @@ pip install -r requirements.txt
 
 ---
 
-## Rodando os serviços
+## Opção 1 — Rodando com Docker (recomendado)
+
+Na raiz do projeto:
+
+```bash
+docker-compose up --build
+```
+
+Todos os serviços sobem automaticamente. Para encerrar:
+
+```bash
+docker-compose down
+```
+
+---
+
+## Opção 2 — Rodando sem Docker
+
+### Instalação
+
+```bash
+pip install -r requirements.txt
+```
+
+### Rodando os serviços
 
 Cada serviço precisa de um terminal separado. Execute a partir da **raiz do projeto**.
 
@@ -56,6 +70,15 @@ $env:REPLICA_ROLE="secondary"; $env:PEER_URL="http://localhost:5002"; uvicorn pr
 ```bash
 uvicorn orders.main:app --port 5003 --reload
 ```
+
+### API Gateway
+
+```bash
+uvicorn gateway.main:app --port 8000 --reload
+```
+
+> Com o gateway rodando, todas as requisições podem ser feitas pela porta 8000.
+> Exemplo: `http://localhost:8000/users/register` em vez de `http://localhost:5001/users/register`.
 
 ---
 
@@ -194,3 +217,32 @@ Resposta esperada:
 ```json
 { "status": "ok" }
 ```
+
+O gateway consolida o estado de todos os serviços em um único endpoint:
+
+```bash
+curl http://localhost:8000/health
+```
+
+Resposta:
+```json
+{
+  "status": "ok",
+  "services": {
+    "users": "up",
+    "products": "up",
+    "orders": "up"
+  }
+}
+```
+
+---
+
+## Simulando falha de serviço
+
+Para testar o heartbeat, derrube um dos serviços (Ctrl+C no terminal correspondente) e aguarde ~10 segundos. O gateway irá:
+
+1. Registrar no log: `DOWN | serviço 'orders' não respondeu 2 vezes seguidas`
+2. Retornar `503 Service Unavailable` para qualquer requisição àquele serviço
+
+Quando o serviço voltar a subir, o gateway registra automaticamente: `RECOVERED | serviço 'orders' voltou a responder`

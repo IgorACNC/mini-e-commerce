@@ -1,0 +1,74 @@
+services:
+
+  users:
+    build:
+      context: .
+      dockerfile: users/Dockerfile
+    ports:
+      - "5001:5001"
+    env_file:
+      - .env
+    volumes:
+      - ./users/users.json:/app/users/users.json
+
+  products-primary:
+    build:
+      context: .
+      dockerfile: products/Dockerfile
+    ports:
+      - "5002:5002"
+    env_file:
+      - .env
+    environment:
+      - REPLICA_ROLE=primary
+      - PEER_URL=http://products-replica:5012
+      - PORT=5002
+    volumes:
+      - ./products/products_a.json:/app/products/products_a.json
+
+  products-replica:
+    build:
+      context: .
+      dockerfile: products/Dockerfile
+    ports:
+      - "5012:5012"
+    env_file:
+      - .env
+    environment:
+      - REPLICA_ROLE=secondary
+      - PEER_URL=http://products-primary:5002
+      - PORT=5012
+    volumes:
+      - ./products/products_b.json:/app/products/products_b.json
+
+  orders:
+    build:
+      context: .
+      dockerfile: orders/Dockerfile
+    ports:
+      - "5003:5003"
+    env_file:
+      - .env
+    environment:
+      - USERS_URL=http://users:5001
+      - PRODUCTS_URL=http://products-primary:5002
+    volumes:
+      - ./orders/orders.json:/app/orders/orders.json
+
+  gateway:
+    build:
+      context: .
+      dockerfile: gateway/Dockerfile
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - USERS_URL=http://users:5001
+      - PRODUCTS_URL=http://products-primary:5002
+      - ORDERS_URL=http://orders:5003
+    depends_on:
+      - users
+      - products-primary
+      - products-replica
+      - orders
