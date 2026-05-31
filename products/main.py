@@ -16,7 +16,6 @@ app = FastAPI()
 
 JWT_SECRET = os.getenv("JWT_SECRET", "chave_secreta")
 
-# primary usa products_a.json e replica é products_b.json (e vice-versa na réplica)
 REPLICA_ROLE = os.getenv("REPLICA_ROLE", "primary")
 PEER_URL = os.getenv("PEER_URL", "http://localhost:5012")
 
@@ -26,18 +25,12 @@ DB_PATH = Path(__file__).parent / (
 
 bearer_scheme = HTTPBearer()
 
-
-# ---------- helpers de armazenamento ----------
-
 def read_db() -> list:
     return json.loads(DB_PATH.read_text(encoding="utf-8"))
 
 
 def write_db(data: list) -> None:
     DB_PATH.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
-
-
-# ---------- helper de JWT ----------
 
 def require_admin(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)) -> dict:
     try:
@@ -52,7 +45,6 @@ def require_admin(credentials: HTTPAuthorizationCredentials = Depends(bearer_sch
 
     return payload
 
-
 def decode_token(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)) -> dict:
     try:
         return jwt.decode(credentials.credentials, JWT_SECRET, algorithms=["HS256"])
@@ -61,17 +53,11 @@ def decode_token(credentials: HTTPAuthorizationCredentials = Depends(bearer_sche
     except jwt.InvalidTokenError:
         raise HTTPException(401, "Token inválido")
 
-
-# ---------- schemas ----------
-
 class ProductRequest(BaseModel):
     name: str
     description: str = ""
     price: float
     stock: int = 0
-
-
-# ---------- endpoints ----------
 
 @app.get("/health")
 def health():
@@ -107,14 +93,12 @@ def create_product(body: ProductRequest, token: dict = Depends(require_admin)):
         "stock": body.stock,
     }
 
-    # propaga para a réplica antes de confirmar (consistência forte)
     try:
         resp = httpx.post(f"{PEER_URL}/_replicate", json=product, timeout=3.0)
         resp.raise_for_status()
     except Exception:
         raise HTTPException(503, "Réplica indisponível — escrita cancelada para manter consistência")
 
-    # só salva localmente após a réplica confirmar
     products = read_db()
     products.append(product)
     write_db(products)

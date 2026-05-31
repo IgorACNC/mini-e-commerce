@@ -24,7 +24,6 @@ DB_PATH = Path(__file__).parent / "orders.json"
 bearer_scheme = HTTPBearer()
 
 
-# ---------- helpers de armazenamento ----------
 
 def read_db() -> list:
     return json.loads(DB_PATH.read_text(encoding="utf-8"))
@@ -34,7 +33,6 @@ def write_db(data: list) -> None:
     DB_PATH.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
 
 
-# ---------- helper de JWT ----------
 
 def decode_token(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)) -> dict:
     try:
@@ -47,7 +45,6 @@ def decode_token(credentials: HTTPAuthorizationCredentials = Depends(bearer_sche
         raise HTTPException(401, "Token inválido")
 
 
-# ---------- schemas ----------
 
 class OrderRequest(BaseModel):
     userId: str
@@ -55,7 +52,6 @@ class OrderRequest(BaseModel):
     quantity: int = 1
 
 
-# ---------- endpoints ----------
 
 @app.get("/health")
 def health():
