@@ -5,6 +5,32 @@
 - Python 3.10 ou superior **ou** Docker + Docker Compose
 - pip (apenas para execução sem Docker)
 
+## Configuração do ambiente
+
+Antes de rodar qualquer serviço, crie o arquivo `.env` na raiz do projeto com o seguinte conteúdo:
+
+```env
+JWT_SECRET=troque_por_uma_chave_secreta_forte
+JWT_EXPIRATION_HOURS=24
+
+USERS_PORT=5001
+PRODUCTS_PORT=5002
+PRODUCTS_REPLICA_PORT=5012
+ORDERS_PORT=5003
+GATEWAY_PORT=8000
+
+USERS_URL=http://localhost:5001
+PRODUCTS_URL=http://localhost:5002
+ORDERS_URL=http://localhost:5003
+
+REPLICA_ROLE=primary
+PEER_URL=http://localhost:5012
+```
+
+> Troque o valor de `JWT_SECRET` por qualquer string de sua escolha. Todos os serviços precisam usar a mesma chave para que os tokens JWT funcionem corretamente.
+
+---
+
 ## Serviços disponíveis
 
 | Serviço             | Porta |
