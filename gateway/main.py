@@ -11,9 +11,15 @@ from pathlib import Path
 
 load_dotenv(Path(__file__).parent.parent / ".env")
 
+LOG_PATH = Path(__file__).parent / "gateway.log"
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        logging.StreamHandler(),                          # continua exibindo no terminal
+        logging.FileHandler(LOG_PATH, encoding="utf-8"), # salva no arquivo
+    ],
 )
 logger = logging.getLogger("gateway")
 
