@@ -84,7 +84,10 @@ app = FastAPI(lifespan=lifespan)
 
 
 async def proxy(request: Request, service: str, path: str) -> Response:
+    method = request.method
+
     if not health_status[service]:
+        logger.warning("REQUEST | %s %s → %s | 503 (serviço indisponível)", method, path, service)
         return Response(
             content=f'{{"detail": "Serviço {service} indisponível no momento"}}',
             status_code=503,
@@ -106,18 +109,20 @@ async def proxy(request: Request, service: str, path: str) -> Response:
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.request(
-                method=request.method,
+                method=method,
                 url=url,
                 headers=headers,
                 content=await request.body(),
             )
     except Exception:
+        logger.error("REQUEST | %s %s → %s | 503 (erro de conexão)", method, path, service)
         return Response(
             content=f'{{"detail": "Erro ao conectar com o serviço {service}"}}',
             status_code=503,
             media_type="application/json",
         )
 
+    logger.info("REQUEST | %s %s → %s | %d", method, path, service, resp.status_code)
     return Response(
         content=resp.content,
         status_code=resp.status_code,
