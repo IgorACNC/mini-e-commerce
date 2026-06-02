@@ -5,9 +5,11 @@
 - Python 3.10 ou superior **ou** Docker + Docker Compose
 - pip (apenas para execução sem Docker)
 
+> **Atenção:** abra o terminal dentro da pasta `Atividade1_IgorCouto/` — não entre na pasta `entrega/` manualmente, pois os comandos abaixo já fazem isso com `cd entrega`.
+
 ## Configuração do ambiente
 
-Antes de rodar qualquer serviço, crie o arquivo `.env` na raiz do projeto com o seguinte conteúdo:
+Antes de rodar qualquer serviço, crie o arquivo `.env` dentro da pasta `entrega/` com o seguinte conteúdo:
 
 ```env
 JWT_SECRET=troque_por_uma_chave_secreta_forte
@@ -45,9 +47,10 @@ PEER_URL=http://localhost:5012
 
 ## Opção 1 — Rodando com Docker (recomendado)
 
-Na raiz do projeto:
+Dentro da pasta `entrega/`:
 
 ```bash
+cd entrega
 docker-compose up --build
 ```
 
@@ -63,13 +66,16 @@ docker-compose down
 
 ### Instalação
 
+Dentro da pasta `entrega/`:
+
 ```bash
+cd entrega
 pip install -r requirements.txt
 ```
 
 ### Rodando os serviços
 
-Cada serviço precisa de um terminal separado. Execute a partir da **raiz do projeto**.
+Cada serviço precisa de um terminal separado. **Todos os comandos devem ser executados de dentro da pasta `entrega/`.**
 
 ### Serviço de Usuários
 
