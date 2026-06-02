@@ -60,6 +60,20 @@ Todos os serviços sobem automaticamente. Para encerrar:
 docker-compose down
 ```
 
+### Visualizando logs do gateway no Docker
+
+Ver em tempo real no terminal:
+
+```bash
+docker-compose logs -f gateway
+```
+
+Acessar o arquivo de log dentro do container:
+
+```bash
+docker exec -it entrega-gateway-1 cat /app/gateway/gateway.log
+```
+
 ---
 
 ## Opção 2 — Rodando sem Docker
