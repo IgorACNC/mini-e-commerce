@@ -1,13 +1,14 @@
 import asyncio
+import itertools
 import logging
 import os
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
+from pathlib import Path
 
 import httpx
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request, Response
-from pathlib import Path
 
 load_dotenv(Path(__file__).parent.parent / ".env")
 
@@ -25,9 +26,10 @@ logger = logging.getLogger("gateway")
 
 
 SERVICES = {
-    "users":    os.getenv("USERS_URL",    "http://localhost:5001"),
-    "products": os.getenv("PRODUCTS_URL", "http://localhost:5002"),
-    "orders":   os.getenv("ORDERS_URL",   "http://localhost:5003"),
+    "users":            os.getenv("USERS_URL",             "http://localhost:5001"),
+    "products":         os.getenv("PRODUCTS_URL",          "http://localhost:5002"),
+    "products-replica": os.getenv("PRODUCTS_REPLICA_URL",  "http://localhost:5012"),
+    "orders":           os.getenv("ORDERS_URL",            "http://localhost:5003"),
 }
 
 HEARTBEAT_INTERVAL = 5   # segundos entre cada verificação
@@ -36,6 +38,9 @@ MAX_FAILURES = 2         # falhas consecutivas para marcar como DOWN
 # estado de saúde de cada serviço
 health_status: dict[str, bool] = {name: True for name in SERVICES}
 failure_count: dict[str, int]  = {name: 0    for name in SERVICES}
+
+# round-robin entre primária e réplica para leituras de produtos
+_products_read_cycle = itertools.cycle(["products", "products-replica"])
 
 
 async def heartbeat_loop():
@@ -136,9 +141,20 @@ async def users_proxy(path: str, request: Request):
     return await proxy(request, "users", f"/users/{path}")
 
 
-@app.api_route("/products/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
-async def products_proxy(path: str, request: Request):
+@app.api_route("/products/{path:path}", methods=["POST", "PUT", "DELETE"])
+async def products_write(path: str, request: Request):
+    # escrita sempre vai para a primária
     return await proxy(request, "products", f"/products/{path}")
+
+
+@app.api_route("/products/{path:path}", methods=["GET"])
+async def products_read(path: str, request: Request):
+    # leitura: round-robin entre primária e réplica
+    svc = next(_products_read_cycle)
+    if not health_status[svc]:
+        # se a escolhida estiver down, usa a outra
+        svc = "products-replica" if svc == "products" else "products"
+    return await proxy(request, svc, f"/products/{path}")
 
 
 @app.api_route("/orders/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
